@@ -36,6 +36,9 @@ func New(upperBound uint64) *Engine {
 	engine.upperBound = upperBound
 	engine.visitedPairs = roaring64.New()
 
+	engine.presetPairsForSumsFilter()
+	engine.presetPairsForProdsFilter()
+
 	return engine
 }
 

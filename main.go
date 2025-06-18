@@ -2,11 +2,14 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"os"
 	"strings"
 
 	"github.com/Arsene-Baitenov/rsatu-algos-many-bits/engine"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 type Person string
@@ -25,6 +28,18 @@ const (
 )
 
 func main() {
+	logLevelFlag := flag.String("log-level", "disabled", "log level: trace, debug, info, warn, error, fatal, panic")
+	flag.Parse()
+
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+
+	logLevel, err := zerolog.ParseLevel(strings.ToLower(*logLevelFlag))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Invalid log level: %s\n", *logLevelFlag)
+		os.Exit(1)
+	}
+	zerolog.SetGlobalLevel(logLevel)
+
 	var n uint64
 	fmt.Print("Введите n: ")
 	fmt.Fscan(os.Stdin, &n)

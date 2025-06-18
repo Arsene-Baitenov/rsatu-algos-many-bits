@@ -1,47 +1,75 @@
 package engine
 
 import (
+	"fmt"
 	"sync"
+	"time"
+
+	"github.com/rs/zerolog/log"
 )
 
 /* Filters non trivial sums. */
 func (engine *Engine) FilterNonTrivialSums() {
+	start := time.Now()
+	defer log.Info().MsgFunc(func() string { return fmt.Sprint("Non trivial sums filtration dur: ", time.Since(start)) })
+
 	engine.Lock()
 	defer engine.Unlock()
 
 	res := engine.filterSingleSumPairs()
 	res = engine.markPairs(res)
 	engine.pairsForProdsFilter = res
+
+	log.Debug().MsgFunc(func() string { return fmt.Sprint("new prods front len: ", len(engine.pairsForProdsFilter)) })
+	log.Trace().MsgFunc(func() string { return fmt.Sprint("new prods front: ", engine.pairsForProdsFilter) })
 }
 
 /* Filters non trivial prods. */
 func (engine *Engine) FilterNonTrivialProds() {
+	start := time.Now()
+	defer log.Info().MsgFunc(func() string { return fmt.Sprint("Non trivial prods filtration dur: ", time.Since(start)) })
+
 	engine.Lock()
 	defer engine.Unlock()
 
 	res := engine.filterSingleProdPairs()
 	res = engine.markPairs(res)
 	engine.pairsForSumsFilter = res
+
+	log.Debug().MsgFunc(func() string { return fmt.Sprint("new sums front len: ", len(engine.pairsForSumsFilter)) })
+	log.Trace().MsgFunc(func() string { return fmt.Sprint("new sums front: ", engine.pairsForSumsFilter) })
 }
 
 /* Computes set of pairs with a single sum after filtrations. */
 func (engine *Engine) ComputePairsBySums() []Pair {
+	start := time.Now()
+	defer log.Info().MsgFunc(func() string { return fmt.Sprint("Computing by sums dur: ", time.Since(start)) })
+
 	engine.Lock()
 	defer engine.Unlock()
 
 	res := removeDuplicates(engine.filterSingleSumPairs())
 	engine.pairsForProdsFilter = res
 
+	log.Debug().MsgFunc(func() string { return fmt.Sprint("new prods front len: ", len(engine.pairsForProdsFilter)) })
+	log.Trace().MsgFunc(func() string { return fmt.Sprint("new prods front: ", engine.pairsForProdsFilter) })
+
 	return engine.convert_ps(res)
 }
 
 /* Computes set of pairs with a single prod after filtrations. */
 func (engine *Engine) ComputePairsByProds() []Pair {
+	start := time.Now()
+	defer log.Info().MsgFunc(func() string { return fmt.Sprint("Computing by prods dur: ", time.Since(start)) })
+
 	engine.Lock()
 	defer engine.Unlock()
 
 	res := removeDuplicates(engine.filterSingleProdPairs())
 	engine.pairsForSumsFilter = res
+
+	log.Debug().MsgFunc(func() string { return fmt.Sprint("new sums front len: ", len(engine.pairsForSumsFilter)) })
+	log.Trace().MsgFunc(func() string { return fmt.Sprint("new sums front: ", engine.pairsForSumsFilter) })
 
 	return engine.convert_ps(res)
 }

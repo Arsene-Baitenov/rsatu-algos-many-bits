@@ -3,8 +3,10 @@ package engine
 import (
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/RoaringBitmap/roaring/roaring64"
+	"github.com/rs/zerolog/log"
 )
 
 /* Max allowed value of an upper bound. */
@@ -30,6 +32,9 @@ type Engine struct {
 
 /* Creates and sets new Engine instance. */
 func New(upperBound uint64) *Engine {
+	start := time.Now()
+	defer log.Info().MsgFunc(func() string { return fmt.Sprint("Engine creation dur: ", time.Since(start)) })
+
 	checkUpperBound(upperBound)
 	engine := new(Engine)
 
@@ -37,7 +42,14 @@ func New(upperBound uint64) *Engine {
 	engine.visitedPairs = roaring64.New()
 
 	engine.presetPairsForSumsFilter()
+
+	log.Debug().MsgFunc(func() string { return fmt.Sprint("sums preset len: ", len(engine.pairsForSumsFilter)) })
+	log.Trace().MsgFunc(func() string { return fmt.Sprint("sums preset: ", engine.pairsForSumsFilter) })
+
 	engine.presetPairsForProdsFilter()
+
+	log.Debug().MsgFunc(func() string { return fmt.Sprint("prods preset len: ", len(engine.pairsForProdsFilter)) })
+	log.Trace().MsgFunc(func() string { return fmt.Sprint("prods preset: ", engine.pairsForProdsFilter) })
 
 	return engine
 }
@@ -50,7 +62,9 @@ func (engine *Engine) GetUpperBound() uint64 {
 /* Checks upperBound for allowed maximum. */
 func checkUpperBound(upperBound uint64) {
 	if upperBound > MaxUpperBound {
-		panic(fmt.Sprint("Given upperBound (", upperBound, ") > allowed (", MaxUpperBound, ")"))
+		msg := fmt.Sprint("Given upperBound (", upperBound, ") > allowed (", MaxUpperBound, ")")
+		log.Error().Msg(msg)
+		panic(msg)
 	}
 }
 

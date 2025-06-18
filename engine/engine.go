@@ -28,6 +28,9 @@ type Engine struct {
 
 	/* Set of pairs for next filtering by prods. */
 	pairsForProdsFilter []uint64
+
+	/* First filtration flag. */
+	isFirstFiltration bool
 }
 
 /* Creates and sets new Engine instance. */
@@ -40,6 +43,7 @@ func New(upperBound uint64) *Engine {
 
 	engine.upperBound = upperBound
 	engine.visitedPairs = roaring64.New()
+	engine.isFirstFiltration = true
 
 	engine.presetPairsForSumsFilter()
 

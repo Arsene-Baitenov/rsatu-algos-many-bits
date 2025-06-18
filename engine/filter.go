@@ -18,7 +18,11 @@ func (engine *Engine) FilterNonTrivialSums() {
 
 	res := engine.filterSingleSumPairs()
 	res = engine.markPairs(res)
-	engine.pairsForProdsFilter = res
+	if !engine.isFirstFiltration {
+		engine.pairsForProdsFilter = res
+	}
+
+	engine.isFirstFiltration = false
 
 	log.Debug().MsgFunc(func() string { return fmt.Sprint("new prods front len: ", len(engine.pairsForProdsFilter)) })
 	log.Trace().MsgFunc(func() string { return fmt.Sprint("new prods front: ", engine.pairsForProdsFilter) })
@@ -36,6 +40,8 @@ func (engine *Engine) FilterNonTrivialProds() {
 	res = engine.markPairs(res)
 	engine.pairsForSumsFilter = res
 
+	engine.isFirstFiltration = false
+
 	log.Debug().MsgFunc(func() string { return fmt.Sprint("new sums front len: ", len(engine.pairsForSumsFilter)) })
 	log.Trace().MsgFunc(func() string { return fmt.Sprint("new sums front: ", engine.pairsForSumsFilter) })
 }
@@ -50,6 +56,8 @@ func (engine *Engine) ComputePairsBySums() []Pair {
 
 	res := removeDuplicates(engine.filterSingleSumPairs())
 	engine.pairsForProdsFilter = res
+
+	engine.isFirstFiltration = false
 
 	log.Debug().MsgFunc(func() string { return fmt.Sprint("new prods front len: ", len(engine.pairsForProdsFilter)) })
 	log.Trace().MsgFunc(func() string { return fmt.Sprint("new prods front: ", engine.pairsForProdsFilter) })
@@ -67,6 +75,8 @@ func (engine *Engine) ComputePairsByProds() []Pair {
 
 	res := removeDuplicates(engine.filterSingleProdPairs())
 	engine.pairsForSumsFilter = res
+
+	engine.isFirstFiltration = false
 
 	log.Debug().MsgFunc(func() string { return fmt.Sprint("new sums front len: ", len(engine.pairsForSumsFilter)) })
 	log.Trace().MsgFunc(func() string { return fmt.Sprint("new sums front: ", engine.pairsForSumsFilter) })
@@ -103,6 +113,10 @@ func removeDuplicates(ps []uint64) (nps []uint64) {
 
 /* Filters pairs with single sums. */
 func (engine *Engine) filterSingleSumPairs() []uint64 {
+	if engine.isFirstFiltration {
+		return engine.pairsForSumsFilter
+	}
+
 	resCh := make(chan uint64, len(engine.pairsForSumsFilter))
 	var wg sync.WaitGroup
 	for _, pairId := range engine.pairsForSumsFilter {
@@ -149,6 +163,10 @@ func (engine *Engine) processSum(pairId uint64) (nextPairId uint64, success bool
 
 /* Filters pairs with single prods. */
 func (engine *Engine) filterSingleProdPairs() []uint64 {
+	if engine.isFirstFiltration {
+		return engine.pairsForProdsFilter
+	}
+
 	resCh := make(chan uint64, len(engine.pairsForProdsFilter))
 	var wg sync.WaitGroup
 	for _, pairId := range engine.pairsForProdsFilter {

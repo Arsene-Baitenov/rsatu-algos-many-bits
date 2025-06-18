@@ -130,8 +130,12 @@ func (engine *Engine) processSum(pairId uint64) (nextPairId uint64, success bool
 	var singlePairId uint64 = 0
 	isSingle := false
 
-	for i := uint64(1); i+i <= s; i++ {
-		if curr := engine.pairId(i, s-i); s-i <= engine.upperBound && !engine.visitedPairs.Contains(curr) {
+	start := uint64(1)
+	if s > engine.upperBound {
+		start = s - engine.upperBound
+	}
+	for i := start; i+i <= s; i++ {
+		if curr := engine.pairId(i, s-i); !engine.visitedPairs.Contains(curr) {
 			if !isSingle {
 				singlePairId, isSingle = curr, true
 			} else {
@@ -172,18 +176,20 @@ func (engine *Engine) processProd(pairId uint64) (nextPairId uint64, success boo
 	var singlePairId uint64 = 0
 	isSingle := false
 
-	for i := uint64(1); i*i <= p; i++ {
+	start := p / engine.upperBound
+	if p%engine.upperBound != 0 {
+		start += 1
+	}
+	for i := start; i*i <= p; i++ {
 		if p%i != 0 {
 			continue
 		}
-		if o := p / i; o <= engine.upperBound {
-			if curr := engine.pairId(i, o); !engine.visitedPairs.Contains(curr) {
-				if !isSingle {
-					singlePairId, isSingle = curr, true
-				} else {
-					isSingle = false
-					break
-				}
+		if curr := engine.pairId(i, p/i); !engine.visitedPairs.Contains(curr) {
+			if !isSingle {
+				singlePairId, isSingle = curr, true
+			} else {
+				isSingle = false
+				break
 			}
 		}
 	}

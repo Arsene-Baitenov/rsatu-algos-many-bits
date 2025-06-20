@@ -2,11 +2,12 @@ package engine
 
 import (
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/rs/zerolog/log"
 )
+
+const batchSize int = 10000
 
 /* Filters non trivial sums. */
 func (engine *Engine) FilterNonTrivialSums() {
@@ -117,23 +118,33 @@ func (engine *Engine) filterSingleSumPairs() []uint64 {
 		return engine.pairsForSumsFilter
 	}
 
-	resCh := make(chan uint64, len(engine.pairsForSumsFilter))
-	var wg sync.WaitGroup
-	for _, pairId := range engine.pairsForSumsFilter {
-		wg.Add(1)
-		go func(pairId uint64) {
-			defer wg.Done()
+	f := func(pairIds []uint64) []uint64 {
+		res := make([]uint64, 0, len(pairIds))
+		for _, pairId := range pairIds {
 			if r, success := engine.processSum(pairId); success {
-				resCh <- r
+				res = append(res, r)
 			}
-		}(pairId)
+		}
+
+		return res
 	}
-	wg.Wait()
-	close(resCh)
+	argCh := make(chan []uint64, 100)
+	resCh := parallelize(f, argCh)
+
+	go func() {
+		for start := 0; start < len(engine.pairsForSumsFilter); start += batchSize {
+			end := start + batchSize
+			if end > len(engine.pairsForSumsFilter) {
+				end = len(engine.pairsForSumsFilter)
+			}
+			argCh <- engine.pairsForSumsFilter[start:end]
+		}
+		close(argCh)
+	}()
 
 	res := make([]uint64, 0, len(resCh))
 	for r := range resCh {
-		res = append(res, r)
+		res = append(res, r...)
 	}
 	return res
 }
@@ -167,23 +178,33 @@ func (engine *Engine) filterSingleProdPairs() []uint64 {
 		return engine.pairsForProdsFilter
 	}
 
-	resCh := make(chan uint64, len(engine.pairsForProdsFilter))
-	var wg sync.WaitGroup
-	for _, pairId := range engine.pairsForProdsFilter {
-		wg.Add(1)
-		go func(pairId uint64) {
-			defer wg.Done()
+	f := func(pairIds []uint64) []uint64 {
+		res := make([]uint64, 0, len(pairIds))
+		for _, pairId := range pairIds {
 			if r, success := engine.processProd(pairId); success {
-				resCh <- r
+				res = append(res, r)
 			}
-		}(pairId)
+		}
+
+		return res
 	}
-	wg.Wait()
-	close(resCh)
+	argCh := make(chan []uint64, 100)
+	resCh := parallelize(f, argCh)
+
+	go func() {
+		for start := 0; start < len(engine.pairsForProdsFilter); start += batchSize {
+			end := start + batchSize
+			if end > len(engine.pairsForProdsFilter) {
+				end = len(engine.pairsForProdsFilter)
+			}
+			argCh <- engine.pairsForProdsFilter[start:end]
+		}
+		close(argCh)
+	}()
 
 	res := make([]uint64, 0, len(resCh))
 	for r := range resCh {
-		res = append(res, r)
+		res = append(res, r...)
 	}
 	return res
 }
